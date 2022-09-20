@@ -3,6 +3,7 @@
 #include <eigen3/Eigen/Eigen>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <math.h>
 
 constexpr double MY_PI = 3.1415926;
 
@@ -26,6 +27,12 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
     // TODO: Implement this function
     // Create the model matrix for rotating the triangle around the Z axis.
     // Then return it.
+    a = rotation_angle * MY_PI / 180.0
+    translate <<
+    cos(a), -sin(a), 0, 0,
+    sin(a), cos(a), 0, 0,
+    0, 0, 1,  0,
+    0, 0, 0, 1;
 
     return model;
 }
