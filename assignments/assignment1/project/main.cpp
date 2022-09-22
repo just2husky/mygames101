@@ -25,7 +25,7 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle) {
     // TODO: Implement this function
     // Create the model matrix for rotating the triangle around the Z axis.
     // Then return it.
-    a = rotation_angle * MY_PI / 180.0;
+    float a = rotation_angle * MY_PI / 180.0;
     Eigen::Matrix4f translate;
     translate <<
               cos(a), -sin(a), 0, 0,
@@ -33,7 +33,7 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle) {
             0, 0, 1, 0,
             0, 0, 0, 1;
 
-    return model;
+    return translate * model;
 }
 
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
@@ -46,27 +46,36 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     // Create the projection matrix for the given parameters.
     // Then return it.
     float zNearAbs = fabs(zNear);
-    float t = tan(eye_fov / 2.0) * zNearAbs;
+    float fovY = eye_fov * MY_PI / 180.0;
+    float t = tan(fovY / 2.0) * zNearAbs;
     float r = aspect_ratio * t;
-    float l = - r;
+    float l = -r;
     float b = -t;
-    Eigen::Matrix4f ortho;
-    // already in origin point, not need translation
-    ortho <<
-                   2.0 / (r - l), 0, 0, 0,
+    Eigen::Matrix4f scale;
+    scale <<
+          2.0 / (r - l), 0, 0, 0,
             0, 2.0 / (t - b), 0, 0,
             0, 0, 2.0 / (zNear - zFar), 0,
-            0, 0, 1, 0;
+            0, 0, 0, 1;
+
+    Eigen::Matrix4f trans;
+    trans <<
+          1, 0, 0, -(r + l) / 2,
+            0, 1, 0, -(t + b) / 2,
+            0, 0, 1, -(zNear + zFar) / 2,
+            0, 0, 0, 1;
+
+    Eigen::Matrix4f ortho = scale * trans;
 
 
     Eigen::Matrix4f persp_to_ortho;
     persp_to_ortho <<
                    zNear, 0, 0, 0,
             0, zNear, 0, 0,
-            0, 0, zNear+zFar, -zNear*zFar,
+            0, 0, zNear + zFar, -zNear * zFar,
             0, 0, 1, 0;
 
-    return ortho * persp_to_ortho;
+    return ortho * persp_to_ortho * projection;
 }
 
 int main(int argc, const char **argv) {
