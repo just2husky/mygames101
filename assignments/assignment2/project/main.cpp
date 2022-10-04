@@ -13,27 +13,60 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 
     Eigen::Matrix4f translate;
     translate << 1,0,0,-eye_pos[0],
-                 0,1,0,-eye_pos[1],
-                 0,0,1,-eye_pos[2],
-                 0,0,0,1;
+            0,1,0,-eye_pos[1],
+            0,0,1,-eye_pos[2],
+            0,0,0,1;
 
     view = translate*view;
 
     return view;
 }
 
-Eigen::Matrix4f get_model_matrix(float rotation_angle)
-{
+Eigen::Matrix4f get_model_matrix(float rotation_angle) {
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
     return model;
 }
 
-Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
-{
-    // TODO: Copy-paste your implementation from the previous assignment.
-    Eigen::Matrix4f projection;
+Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
+                                      float zNear, float zFar) {
+    // Students will implement this function
 
-    return projection;
+    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
+
+    // TODO: Implement this function
+    // Create the projection matrix for the given parameters.
+    // Then return it.
+    float zNearAbs = fabs(zNear);
+    float fovY = eye_fov * MY_PI / 180.0;
+    float t = tan(fovY / 2.0) * zNearAbs;
+    float r = aspect_ratio * t;
+    float l = -r;
+    float b = -t;
+    Eigen::Matrix4f scale;
+    scale <<
+          2.0 / (r - l), 0, 0, 0,
+            0, 2.0 / (t - b), 0, 0,
+            0, 0, 2.0 / (zNear - zFar), 0,
+            0, 0, 0, 1;
+
+    Eigen::Matrix4f trans;
+    trans <<
+          1, 0, 0, -(r + l) / 2,
+            0, 1, 0, -(t + b) / 2,
+            0, 0, 1, -(zNear + zFar) / 2,
+            0, 0, 0, 1;
+
+    Eigen::Matrix4f ortho = scale * trans;
+
+
+    Eigen::Matrix4f persp_to_ortho;
+    persp_to_ortho <<
+                   zNear, 0, 0, 0,
+            0, zNear, 0, 0,
+            0, 0, zNear + zFar, -(zNear * zFar),
+            0, 0, 1, 0;
+
+    return ortho * persp_to_ortho * projection;
 }
 
 int main(int argc, const char** argv)
