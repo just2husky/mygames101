@@ -36,15 +36,26 @@ auto to_vec4(const Eigen::Vector3f &v3, float w = 1.0f) {
 }
 
 
-static bool insideTriangle(int x, int y, const Vector3f *_v) {
-    // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
-    Eigen::Vector3f AB = Eigen::Vector3f(_v[1].x() - _v[0].x(), _v[1].y() - _v[0].y(), 0);
-    Eigen::Vector3f AC = Eigen::Vector3f(_v[2].x() - _v[0].x(), _v[2].y() - _v[0].y(), 0);
-    Eigen::Vector3f AP = Eigen::Vector3f(x - _v[0].x(), y - _v[0].y(), 0);
+static float cross2d(const Vector2f v1, const Vector2f v2) {
+    return v1[0] * v2[1] - v1[1] * v2[0];
+}
 
-    Eigen::Vector3f v1 = AB.cross(AC);
-    Eigen::Vector3f v2 = AB.cross(AP);
-    return v1.dot(v2) <= 0;
+static bool insideTriangle(double x, double y, const Vector3f* _v)
+{
+    Eigen::Vector2f p;
+    p << x, y;
+
+    Eigen::Vector2f AB, BC, CA;
+    AB = _v[0].head(2) - _v[1].head(2);
+    BC = _v[1].head(2) - _v[2].head(2);
+    CA = _v[2].head(2) - _v[0].head(2);
+
+    Eigen::Vector2f AP, BP, CP;
+    AP = _v[0].head(2) - p;
+    BP = _v[1].head(2) - p;
+    CP = _v[2].head(2) - p;
+
+    return cross2d(AB, AP) > 0 && cross2d(BC, BP) > 0 && cross2d(CA, CP) > 0;
 }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f *v) {
@@ -84,7 +95,7 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         for (auto &vert: v) {
             vert.x() = 0.5 * width * (vert.x() + 1.0);
             vert.y() = 0.5 * height * (vert.y() + 1.0);
-            vert.z() = vert.z() * f1 + f2;
+            vert.z() = -vert.z() * f1 + f2;  // https://games-cn.org/forums/topic/hw2%e7%9a%84%e7%96%91%e9%97%ae/
         }
 
         for (int i = 0; i < 3; ++i) {
