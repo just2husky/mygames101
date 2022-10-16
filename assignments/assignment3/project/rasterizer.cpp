@@ -259,6 +259,82 @@ static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const E
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& view_pos) 
 {
+    auto v = t.toVector4();
+
+    // TODO : Find out the bounding box of current triangle.
+    float x_minf = t.v[0].x();
+    float x_maxf = t.v[0].x();
+    float y_minf = t.v[0].y();
+    float y_maxf = t.v[0].y();
+    // std::cout << "float x_min: " << x_minf << ", x_max: " << x_maxf << ", y_min: " << y_minf << ", y_max: " << y_maxf << std::endl;
+
+
+    for (auto &point: t.v) {
+        // std::cout << "rasterize_triangle, point" << " " << ", x: " << point.x() << ", y: " << point.y() << std::endl;
+        if (point.x() < x_minf) {
+            x_minf = point.x();
+        }
+        if (point.x() > x_maxf) {
+            x_maxf = point.x();
+        }
+        if (point.y() < y_minf) {
+            y_minf = point.y();
+        }
+        if (point.y() > y_maxf) {
+            y_maxf = point.y();
+        }
+    }
+
+    int x_min = ceil(x_minf);
+    int x_max = floor(x_maxf);
+    int y_min = ceil(y_minf);
+    int y_max = floor(y_maxf);
+    std::cout << "int x_min: " << x_min << ", x_max: " << x_max << ", y_min: " << y_min << ", y_max: " << y_max << std::endl;
+
+    // iterate through the pixel and find if the current pixel is inside the triangle
+    for (int x = x_min; x < x_max; x++) {
+        for (int y = y_min; y < y_max; y++) {
+            int pixel_x = x + 0.5;
+            int pixel_y = y + 0.5;
+            bool result = insideTriangle(pixel_x, pixel_y, t.v);
+            if (result) {
+                // If so, use the following code to get the interpolated z value.
+                auto [alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+                float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                float z_interpolated =
+                        alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                z_interpolated *= w_reciprocal;
+                int index = get_index(x, y);
+                float depth = depth_buf[index];
+                if (z_interpolated < depth) {
+                    depth_buf[index] = z_interpolated;
+
+                    // TODO: Interpolate the attributes:
+                    auto [alpha, beta, gamma] = computeBarycentric2D(x, y, t.color);
+                    auto interpolated_color = alpha * t.color[0] + beta * t.color[1] + t.color[2];
+
+                    auto [alpha, beta, gamma] = computeBarycentric2D(x, y, t.normal);
+                    auto interpolated_normal =alpha * t.normal[0].normalized() + beta * t.normal[1].normalized() + gamma * t.normal[2].normalized();
+
+                    auto [alpha, beta, gamma] = computeBarycentric2D(x, y, t.tex_coords);
+                    auto interpolated_texcoords = alpha * t.tex_coords[0] + beta * t.tex_coords[1] + t.tex_coords[2];
+
+                    auto [alpha, beta, gamma] = computeBarycentric2D(x, y, view_pos);
+                    auto interpolated_shadingcoords = alpha * view_pos[0] + beta * view_pos[1] + view_pos[2];
+
+                    fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
+                    payload.view_pos = interpolated_shadingcoords;
+                    // Use: Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color;
+                    auto pixel_color = fragment_shader(payload);
+
+                    // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
+                    Eigen::Vector3f point = Eigen::Vector3f(x, y, 0);
+                    set_pixel(point, t.getColor());
+                }
+
+            }
+        }
+    }
     // TODO: From your HW3, get the triangle rasterization code.
     // TODO: Inside your rasterization loop:
     //    * v[i].w() is the vertex view space depth value z.
@@ -279,9 +355,8 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
     // Use: payload.view_pos = interpolated_shadingcoords;
     // Use: Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color;
     // Use: auto pixel_color = fragment_shader(payload);
-
- 
 }
+
 
 void rst::rasterizer::set_model(const Eigen::Matrix4f& m)
 {
