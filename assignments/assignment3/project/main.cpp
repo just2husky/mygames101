@@ -39,18 +39,56 @@ Eigen::Matrix4f get_model_matrix(float angle)
               0, 0, 0, 1;
 
     Eigen::Matrix4f translate;
-    translate << 1, 0, 0, 0,
-            0, 1, 0, 0,
+    translate << -1, 0, 0, 0,
+            0, -1, 0, 0,
             0, 0, 1, 0,
             0, 0, 0, 1;
 
     return translate * rotation * scale;
 }
 
-Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
-{
-    // TODO: Use the same projection matrix from the previous assignments
+Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
+                                      float zNear, float zFar) {
+    // Students will implement this function
 
+    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
+
+    // TODO: Implement this function
+    // Create the projection matrix for the given parameters.
+    // Then return it.
+    // zNear = -zNear;
+    // zFar = -zFar;
+    float zNearAbs = fabs(zNear);
+    float fovY = eye_fov * MY_PI / 180.0;
+    float t = tan(fovY / 2.0) * zNearAbs;
+    float r = aspect_ratio * t;
+    float l = -r;
+    float b = -t;
+    Eigen::Matrix4f scale;
+    scale <<
+          2.0 / (r - l), 0, 0, 0,
+            0, 2.0 / (t - b), 0, 0,
+            0, 0, 2.0 / (zNear - zFar), 0,
+            0, 0, 0, 1;
+
+    Eigen::Matrix4f trans;
+    trans <<
+          1, 0, 0, -(r + l) / 2,
+            0, 1, 0, -(t + b) / 2,
+            0, 0, 1, -(zNear + zFar) / 2,
+            0, 0, 0, 1;
+
+    Eigen::Matrix4f ortho = scale * trans;
+
+
+    Eigen::Matrix4f persp_to_ortho;
+    persp_to_ortho <<
+                   zNear, 0, 0, 0,
+            0, zNear, 0, 0,
+            0, 0, zNear + zFar, -(zNear * zFar),
+            0, 0, 1, 0;
+
+    return ortho * persp_to_ortho * projection;
 }
 
 Eigen::Vector3f vertex_shader(const vertex_shader_payload& payload)
@@ -139,17 +177,17 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
 
     Eigen::Vector3f result_color = {0, 0, 0};
 
-    Eigen::Vector3f light_vector = (light.position - point).normalized();
+    Eigen::Vector3f light_vector = (l1.position - point).normalized();
     Eigen::Vector3f view_vector = (eye_pos - point).normalized();
     for (auto& light : lights)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
         Eigen::Vector3f ambient = ka.cwiseProduct(amb_light_intensity);
-        float distance = light_vector.length;
-        Eigen::Vector3f diffuse = kd.cwiseProduct((light.intensity / pow(distance, 2)) * std::max(0,normal.dot(light_vector)));
-        Eigen::Vector3f half_vector = ((light_vector + view_vector) / (light_vector + view_vector).length).normalized();
-        Eigen::Vector3f specular = ks.cwiseProduct(((light.intensity / pow(distance, 2)) * pow(std::max(0,normal.dot(half_vector)), point));
+        float distance = light_vector.norm();
+        Eigen::Vector3f diffuse = kd.cwiseProduct((light.intensity / pow(distance, 2)) * std::max(0.0f,normal.dot(light_vector)));
+        Eigen::Vector3f half_vector = ((light_vector + view_vector) / (light_vector + view_vector).norm()).normalized();
+        Eigen::Vector3f specular = ks.cwiseProduct(((light.intensity / pow(distance, 2)) * pow(std::max(0.0f, normal.dot(half_vector)), p)));
         result_color += color.cwiseProduct(ambient + diffuse + specular);
     }
 
