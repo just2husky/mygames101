@@ -1,0 +1,40 @@
+{
+    "files.associations": {
+        "core": "cpp",
+        "cmath": "cpp",
+        "complex": "cpp",
+        "xiosbase": "cpp"
+    },
+    "deploy": {
+        "packages": [
+            {
+                "name": "Version 2.3.4",
+                "files": [
+                    "**/**",
+                    "**/*.*",
+                    "Makefile"
+                ],
+                "exclude": [
+                    ".vscode/**",
+                    "logs/**",
+                    "data/**",
+                    "build"
+                ],
+                "deployOnSave": false
+            }
+        ],
+        "targets": [
+            {
+                "type": "sftp",
+                "name": "nginx SFTP folder",
+                "dir": "/home/cs18/workspace/games101/assignment3/project",
+                "host": "192.168.124.6", "port": 22,
+                "user": "cs18", "password": "Ilovegraphics"
+            }
+        ],
+        "showPopupOnSuccess":false,
+        "showDeployResultInStatusBar":false,
+        "displayLoadedPlugins":false,
+        "displayNetworkInfo":false
+    }
+}

@@ -1,3 +1,4 @@
+include_directories("E:/Program/Eigen3/include/eigen3")
 cmake_minimum_required(VERSION 3.10)
 project(Rasterizer)
 
